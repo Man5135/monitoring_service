@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мониторинг станка</title>
+    <link rel="stylesheet" href="/styles/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="header">
+        <h1>Мониторинг станков</h1>
+        <div class="buttons">
+            {% if role == 'admin' %}
+            <a href="/admin" class="admin-btn">Админ-панель</a>
+            {% endif %}
+            <a href="/logout" class="logout-btn">Выйти</a>
+        </div>
+    </header>
+    <main class="equipment-container">
+        {% if has_equipment %}
+            <div class="equipment-controls">
+                <div id="arduino-status" class="status-message">Проверка состояния...</div>
+                <button id="start-equipment-btn" class="control-btn">▶ Запустить станок</button>
+                <button id="stop-equipment-btn" class="control-btn" disabled>■ Остановить станок</button>
+            </div>
+            
+            <section class="sensor-data">
+                <div class="sensor-item">
+                    <span>Температура:</span>
+                    <span id="temperature">0 °C</span>
+                </div>
+                <div class="sensor-item">
+                    <span>Давление:</span>
+                    <span id="pressure">0 бар</span>
+                </div>
+                <div class="sensor-item">
+                    <span>Вибрация:</span>
+                    <span id="vibration">0 мм/с</span>
+                </div>
+                <div class="sensor-item">
+                    <span>Скорость шпинделя:</span>
+                    <span id="spindle-speed">0 об/мин</span>
+                </div>
+                <div class="sensor-item">
+                    <span>Нагрузка:</span>
+                    <span id="load">0%</span>
+                </div>
+            </section>
+            
+            <canvas id="sensor-chart"></canvas>
+        {% else %}
+            <div class="no-equipment">
+                <h2>Подключите станок для начала работы</h2>
+                <div id="arduino-status" class="status-message error">Станок не подключен</div>
+            </div>
+        {% endif %}
+    </main>
+    <script src="/scripts/index.js"></script>
+</body>
+</html>

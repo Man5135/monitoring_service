@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель</title>
+    <link rel="stylesheet" href="/styles/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="header">
+        <h1>Админ-панель</h1>
+        <div class="buttons">
+            <a href="/index" class="back-btn">На главную</a>
+            <a href="/logout" class="logout-btn">Выйти</a>
+        </div>
+    </header>
+    <div class="admin-container">
+        <h2>Состояние системы</h2>
+        <div class="system-status">
+            {% if arduino_connected %}
+                <div class="status-message success">Станок подключен</div>
+                <div class="equipment-status">
+                    <h3>Показания станка:</h3>
+                    <div class="sensor-item">
+                        <span>Температура:</span>
+                        <span id="temperature-value">{{ equipment.temperature|round(1) }} °C</span>
+                    </div>
+                    <div class="sensor-item">
+                        <span>Давление:</span>
+                        <span id="pressure-value">{{ equipment.pressure|round(1) }} бар</span>
+                    </div>
+                    <div class="sensor-item">
+                        <span>Вибрация:</span>
+                        <span id="vibration-value">{{ equipment.vibration|round(1) }} мм/с</span>
+                    </div>
+                    <div class="sensor-item">
+                        <span>Скорость шпинделя:</span>
+                        <span id="speed-value">{{ equipment.spindle_speed|round }} об/мин</span>
+                    </div>
+                    <div class="sensor-item">
+                        <span>Нагрузка:</span>
+                        <span id="load-value">{{ equipment.load|round }}%</span>
+                    </div>
+                    <div class="sensor-item">
+                        <span>Состояние:</span>
+                        <span id="status-value">{{ "Работает" if equipment.is_running else "Остановлен" }}</span>
+                    </div>
+                    <div class="sensor-item">
+                        <span>Общее время работы:</span>
+                        <span id="runtime-value">{{ ((equipment.total_runtime / 1000 / 60)|round(1)) if equipment.total_runtime else '0.0' }} минут</span>
+                    </div>
+                    <div class="sensor-item">
+                        <span>Последний запуск:</span>
+                        <span id="start-time-value">{{ equipment.start_time.strftime('%Y-%m-%d %H:%M:%S') if equipment.start_time else 'Нет данных' }}</span>
+                    </div>
+                    <div class="sensor-item">
+                        <span>Последняя остановка:</span>
+                        <span id="stop-time-value">{{ equipment.stop_time.strftime('%Y-%m-%d %H:%M:%S') if equipment.stop_time else 'Нет данных' }}</span>
+                    </div>
+                    <div class="sensor-item">
+                        <span>Последнее обновление:</span>
+                        <span id="last-updated-value">{{ equipment.last_updated.strftime('%Y-%m-%d %H:%M:%S') if equipment.last_updated else 'Нет данных' }}</span>
+                    </div>
+                </div>
+                
+                <button id="generate-report-btn" class="control-btn">Создать отчет</button>
+                
+                <canvas id="equipment-chart"></canvas>
+            {% else %}
+                <div class="status-message error">Станок не подключен</div>
+            {% endif %}
+        </div>
+
+        <h2>Последние события</h2>
+        <button id="clear-logs-btn" class="control-btn">Очистить логи</button>
+        <table class="events-table">
+            <thead>
+                <tr>
+                    <th>Время (МСК)</th>
+                    <th>Температура</th>
+                    <th>Давление</th>
+                    <th>Вибрация</th>
+                    <th>Скорость</th>
+                    <th>Нагрузка</th>
+                    <th>Статус</th>
+                    <th>Событие</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                    <tr class="{{ 'alert-row' if log.alert }}">
+                        <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                        <td>{{ log.temperature|round(1) if log.temperature is not none }}</td>
+                        <td>{{ log.pressure|round(1) if log.pressure is not none }}</td>
+                        <td>{{ log.vibration|round(1) if log.vibration is not none }}</td>
+                        <td>{{ log.spindle_speed|round if log.spindle_speed is not none }}</td>
+                        <td>{{ log.load|round if log.load is not none }}</td>
+                        <td>{{ "Работает" if log.is_running else "Остановлен" }}</td>
+                        <td class="{{ 'alert-cell' if log.alert }}">{{ log.alert if log.alert }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+<h2>Управление пользователями</h2>
+<table class="personal_data">
+    <tr>
+        <th>Логин</th>
+        <th>Пароль</th>
+        <th>Роль</th>
+        <th>Действия</th>
+    </tr>
+    {% for user in users %}
+        <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.original_password }}</td>
+            <td>{{ user.role }}</td>
+            <td>
+                {% if not (user.role == 'admin' and users|selectattr('role', 'equalto', 'admin')|list|length <= 1) %}
+                    <a href="/admin/delete_user/{{ user.id }}" class="delete-btn">Удалить</a>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+
+        <h2>Создать нового пользователя</h2>
+        <form method="POST" action="/admin/add_user">
+            <input type="text" name="username" placeholder="Логин" required>
+            <input type="password" name="password" placeholder="Пароль" required>
+            <select name="role">
+                <option value="engineer">Инженер</option>
+                <option value="admin">Админ</option>
+            </select>
+            <button type="submit">Создать</button>
+        </form>
+    </div>
+    <div id="alerts-container"></div>
+    <script src="/scripts/admin.js"></script>
+</body>
+</html>
