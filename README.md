@@ -13,8 +13,6 @@
 Логин: admin
 Пароль: admin
 
-*Только просмотр данных*
-
 ## ⚙️ Технологии
 - **Backend**: Python 3.9+, Flask, SQLAlchemy
 - **Frontend**: HTML5, CSS3, Chart.js
